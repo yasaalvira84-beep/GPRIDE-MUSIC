@@ -1,1 +1,23 @@
-
+<resources>
+    <string name="app_name">GPRIDE MUSIC</string>
+    <string name="nav_home">Beranda</string>
+    <string name="nav_library">Library</string>
+    <string name="nav_playlist">Playlist</string>
+    <string name="nav_settings">Pengaturan</string>
+    <string name="placeholder_library">Library — pemindaian MediaStore hadir di Tahap 3.</string>
+    <string name="placeholder_playlist">Playlist — hadir di Tahap 3.</string>
+    <string name="placeholder_settings">Pengaturan — hadir bertahap mulai Tahap 4.</string>
+    <string name="player_nothing_playing">Belum ada lagu</string>
+    <string name="player_add_songs">Tambah lagu</string>
+    <string name="player_queue">Antrean</string>
+    <string name="player_queue_empty">Antrean kosong. Tambahkan lagu untuk mulai memutar.</string>
+    <string name="cd_play">Putar</string>
+    <string name="cd_pause">Jeda</string>
+    <string name="cd_next">Lagu berikutnya</string>
+    <string name="cd_previous">Lagu sebelumnya</string>
+    <string name="cd_shuffle">Acak</string>
+    <string name="cd_repeat">Ulangi</string>
+    <string name="cd_move_up">Naikkan</string>
+    <string name="cd_move_down">Turunkan</string>
+    <string name="cd_remove">Hapus dari antrean</string>
+</resources>
