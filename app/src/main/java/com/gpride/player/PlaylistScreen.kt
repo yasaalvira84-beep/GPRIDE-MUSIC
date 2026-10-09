@@ -59,9 +59,9 @@ private fun PlaylistOverview(vm: PlaylistViewModel) {
 
     Column(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.weight(1f)) {
-            item { OverviewRow("Favorit", null) { vm.open(ListKey.Favorites) } }
-            item { OverviewRow("Sering diputar", null) { vm.open(ListKey.MostPlayed) } }
-            item { OverviewRow("Riwayat", null) { vm.open(ListKey.History) } }
+            item { OverviewRow("Favorit", null, onClick = { vm.open(ListKey.Favorites) }) }
+            item { OverviewRow("Sering diputar", null, onClick = { vm.open(ListKey.MostPlayed) }) }
+            item { OverviewRow("Riwayat", null, onClick = { vm.open(ListKey.History) }) }
             item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
             if (lists.isEmpty()) {
                 item { Text("Belum ada playlist.", Modifier.padding(16.dp)) }
@@ -221,3 +221,4 @@ fun AddToPlaylistDialog(
         dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } },
     )
 }
+
