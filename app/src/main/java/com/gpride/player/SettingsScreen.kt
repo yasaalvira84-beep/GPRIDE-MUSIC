@@ -38,6 +38,7 @@ fun SettingsScreen(library: LibraryViewModel, onOpenVisualizer: () -> Unit) {
     val app = LocalContext.current.applicationContext as GprideApplication
     val scope = rememberCoroutineScope()
     val historyEnabled by app.settings.historyEnabled.collectAsState(initial = true)
+    val lyricsOnline by app.settings.lyricsOnline.collectAsState(initial = true)
     var confirmClear by remember { mutableStateOf(false) }
 
     Column(
@@ -71,6 +72,25 @@ fun SettingsScreen(library: LibraryViewModel, onOpenVisualizer: () -> Unit) {
                 )
             }
             OutlinedButton(onClick = { confirmClear = true }) { Text("Hapus riwayat") }
+        }
+
+        SettingsCard("Lirik") {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Cari lirik otomatis")
+                    Text(
+                        "Mencari lirik dari LRCLIB lewat internet. Hanya judul, artis, album, dan durasi yang dikirim; " +
+                            "file musik tidak diunggah. Hasil disimpan di perangkat.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = lyricsOnline,
+                    onCheckedChange = { scope.launch { app.settings.setLyricsOnline(it) } },
+                )
+            }
+            OutlinedButton(onClick = { app.lyrics.clearCache() }) { Text("Hapus cache lirik") }
         }
 
         SettingsCard("Library") {

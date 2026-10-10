@@ -172,6 +172,17 @@ fun NowPlayingScreen(vm: PlayerViewModel, song: Song?, onBack: () -> Unit) {
             }
         }
         item {
+            LyricsPanel(
+                songKey = state.songId?.toString() ?: "t${"${state.artist}|${state.title}".hashCode()}",
+                title = state.title,
+                artist = state.artist,
+                album = song?.album,
+                durationMs = state.durationMs,
+                positionMs = state.positionMs,
+                onSeek = vm::seekTo,
+            )
+        }
+        item {
             Text(
                 "${stringResource(R.string.player_queue)} (${state.queue.size})",
                 modifier = Modifier.fillMaxWidth().padding(start = 24.dp, top = 16.dp, bottom = 4.dp),

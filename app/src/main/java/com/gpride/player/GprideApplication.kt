@@ -11,4 +11,5 @@ class GprideApplication : Application() {
     val dao: GprideDao get() = database.dao()
     val settings: SettingsStore by lazy { SettingsStore(this) }
     val library: LibraryRepository by lazy { LibraryRepository(this) }
+    val lyrics: LyricsRepository by lazy { LyricsRepository(this) }
 }

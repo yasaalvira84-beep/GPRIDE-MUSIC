@@ -25,11 +25,19 @@ class SettingsStore(private val context: Context) {
     private val visSensitivityKey = intPreferencesKey("vis_sensitivity")
     private val visFpsKey = intPreferencesKey("vis_fps")
     private val visColorKey = intPreferencesKey("vis_color")
+    private val lyricsOnlineKey = booleanPreferencesKey("lyrics_online")
 
     val historyEnabled: Flow<Boolean> = context.dataStore.data.map { it[historyKey] ?: true }
 
     suspend fun setHistoryEnabled(enabled: Boolean) {
         context.dataStore.edit { it[historyKey] = enabled }
+    }
+
+    /** Cari lirik otomatis lewat internet (mengirim judul/artis/album/durasi ke LRCLIB). */
+    val lyricsOnline: Flow<Boolean> = context.dataStore.data.map { it[lyricsOnlineKey] ?: true }
+
+    suspend fun setLyricsOnline(enabled: Boolean) {
+        context.dataStore.edit { it[lyricsOnlineKey] = enabled }
     }
 
     val visualizer: Flow<VisualizerPrefs> = context.dataStore.data.map { p ->
