@@ -1,22 +1,25 @@
 package com.gpride.player
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
@@ -29,6 +32,7 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,26 +48,37 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.media3.common.Player
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
-/** Layar Now Playing penuh: sampul album bercincin neon, kontrol, dan antrean. */
+private fun hasRecordPermission(context: Context): Boolean =
+    ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+
+/** Layar Now Playing penuh: sampul album bercincin neon, visualizer, kontrol, dan antrean. */
 @Composable
 fun NowPlayingScreen(vm: PlayerViewModel, song: Song?, onBack: () -> Unit) {
+    val context = LocalContext.current
+    val app = context.applicationContext as GprideApplication
     val state by vm.state.collectAsState()
     val message by vm.message.collectAsState()
+    val prefs by app.settings.visualizer.collectAsState(initial = VisualizerPrefs())
     var dragging by remember { mutableStateOf<Float?>(null) }
     val duration = state.durationMs.coerceAtLeast(1L).toFloat()
+
+    var micGranted by remember { mutableStateOf(hasRecordPermission(context)) }
+    val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { micGranted = it }
+    val active = prefs.enabled && micGranted && state.isPlaying
+    val feed = rememberVisualizerFeed(active, prefs.sensitivity / 100f, prefs.fps)
+    val color = VisualizerPalettes[prefs.colorIndex.coerceIn(0, VisualizerPalettes.lastIndex)]
 
     LazyColumn(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         item {
@@ -80,7 +96,13 @@ fun NowPlayingScreen(vm: PlayerViewModel, song: Song?, onBack: () -> Unit) {
             }
         }
         item {
-            ArtWithRing(song = song, playing = state.isPlaying, modifier = Modifier.padding(vertical = 16.dp))
+            ArtWithRing(
+                song = song,
+                bands = feed.bands,
+                color = color,
+                live = prefs.enabled && prefs.style == VisualizerStyle.Circular,
+                modifier = Modifier.padding(vertical = 16.dp),
+            )
         }
         item {
             Text(
@@ -106,6 +128,45 @@ fun NowPlayingScreen(vm: PlayerViewModel, song: Song?, onBack: () -> Unit) {
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+        if (prefs.enabled && prefs.style != VisualizerStyle.Circular) {
+            item {
+                VisualizerCanvas(
+                    style = prefs.style,
+                    bands = feed.bands,
+                    color = color,
+                    modifier = Modifier.fillMaxWidth().height(110.dp).padding(horizontal = 24.dp, vertical = 12.dp),
+                )
+            }
+        }
+        if (prefs.enabled && !micGranted) {
+            item {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        "Visualizer butuh izin Rekam audio agar bisa membaca keluaran musik aplikasi ini. " +
+                            "Mikrofon tidak direkam.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Button(onClick = { micLauncher.launch(Manifest.permission.RECORD_AUDIO) }) { Text("Izinkan visualizer") }
+                }
+            }
+        } else if (active && feed.failed.value) {
+            item {
+                Text(
+                    "Visualizer tidak tersedia di perangkat ini.",
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -187,23 +248,21 @@ fun NowPlayingScreen(vm: PlayerViewModel, song: Song?, onBack: () -> Unit) {
                 Modifier.fillMaxWidth().clickable { vm.playAt(index) }.padding(start = 24.dp, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(Modifier.weight(1f).padding(vertical = 8.dp)) {
-                    androidx.compose.foundation.layout.Column {
+                Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
+                    Text(
+                        entry.title,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    )
+                    entry.artist?.let {
                         Text(
-                            entry.title,
+                            it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                         )
-                        entry.artist?.let {
-                            Text(
-                                it,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                            )
-                        }
                     }
                 }
                 IconButton(onClick = { vm.move(index, -1) }) {
@@ -220,48 +279,30 @@ fun NowPlayingScreen(vm: PlayerViewModel, song: Song?, onBack: () -> Unit) {
     }
 }
 
-/**
- * Sampul bulat dengan cincin neon. Animasi denyut hanya tanda sedang memutar;
- * cincin belum mengikuti audio (visualizer sungguhan menyusul).
- */
+/** Sampul bulat dengan cincin neon; cincin mengikuti audio hanya saat gaya Circular dan [live] aktif. */
 @Composable
-private fun ArtWithRing(song: Song?, playing: Boolean, modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "pulse")
-    val pulse by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing), RepeatMode.Reverse),
-        label = "pulse",
-    )
-    val glow = if (playing) pulse else 0.25f
+private fun ArtWithRing(
+    song: Song?,
+    bands: State<FloatArray>,
+    color: Color,
+    live: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val idle = remember { FloatArray(VISUALIZER_BANDS) }
     Box(modifier.size(290.dp), contentAlignment = Alignment.Center) {
-        val green = MaterialTheme.colorScheme.primary
         Canvas(Modifier.size(290.dp)) {
             val radius = size.minDimension / 2f
             drawCircle(
-                color = green.copy(alpha = 0.08f + 0.14f * glow),
-                radius = radius * 0.92f,
-                style = Stroke(width = 22.dp.toPx()),
-            )
-            drawCircle(
-                color = green.copy(alpha = 0.45f + 0.45f * glow),
-                radius = radius * 0.80f,
+                color = color.copy(alpha = 0.55f),
+                radius = radius * 0.72f,
                 style = Stroke(width = 3.dp.toPx()),
             )
-            val ticks = 72
-            for (i in 0 until ticks) {
-                val angle = 2.0 * PI * i / ticks
-                val length = (5f + 9f * (0.5f + 0.5f * sin(i * 0.9f))) * (0.6f + 0.6f * glow)
-                val inner = radius * 0.86f
-                val outer = inner + length.dp.toPx()
-                drawLine(
-                    color = green.copy(alpha = 0.85f),
-                    start = Offset(center.x + inner * cos(angle).toFloat(), center.y + inner * sin(angle).toFloat()),
-                    end = Offset(center.x + outer * cos(angle).toFloat(), center.y + outer * sin(angle).toFloat()),
-                    strokeWidth = 2.5.dp.toPx(),
-                    cap = StrokeCap.Round,
-                )
-            }
+            drawCircularBars(
+                b = if (live) bands.value else idle,
+                color = color,
+                innerFraction = 0.77f,
+                maxLenFraction = 0.21f,
+            )
         }
         AlbumArt(song, Modifier.size(200.dp), shape = CircleShape)
     }

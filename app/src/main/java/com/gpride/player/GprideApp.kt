@@ -44,6 +44,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 
 private const val NOW_PLAYING_ROUTE = "nowplaying"
+private const val VISUALIZER_ROUTE = "visualizer"
 
 @Composable
 fun GprideApp() {
@@ -92,8 +93,10 @@ fun GprideApp() {
                         tonalElevation = 0.dp,
                     ) {
                         Destination.entries.forEach { dest ->
+                            val selected = currentRoute == dest.route ||
+                                (dest == Destination.Settings && currentRoute == VISUALIZER_ROUTE)
                             NavigationBarItem(
-                                selected = currentRoute == dest.route,
+                                selected = selected,
                                 onClick = { navigateTo(dest) },
                                 icon = { Icon(dest.icon, contentDescription = stringResource(dest.label)) },
                                 label = { Text(stringResource(dest.label)) },
@@ -129,11 +132,22 @@ fun GprideApp() {
             }
             composable(Destination.Library.route) { LibraryScreen(library, player, playlists) }
             composable(Destination.Playlist.route) { PlaylistScreen(playlists, player) }
-            composable(Destination.Settings.route) { SettingsScreen(library) }
+            composable(Destination.Settings.route) {
+                SettingsScreen(
+                    library = library,
+                    onOpenVisualizer = { navController.navigate(VISUALIZER_ROUTE) { launchSingleTop = true } },
+                )
+            }
             composable(NOW_PLAYING_ROUTE) {
                 NowPlayingScreen(
                     vm = player,
                     song = currentSong,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(VISUALIZER_ROUTE) {
+                VisualizerSettingsScreen(
+                    player = player,
                     onBack = { navController.popBackStack() },
                 )
             }

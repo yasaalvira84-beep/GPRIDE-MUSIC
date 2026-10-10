@@ -32,9 +32,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
-/** Pengaturan sementara; Tampilan, Audio, Visualizer, dan lainnya menyusul di tahap berikutnya. */
+/** Pengaturan sementara; Tampilan, Audio, dan lainnya menyusul di tahap berikutnya. */
 @Composable
-fun SettingsScreen(library: LibraryViewModel) {
+fun SettingsScreen(library: LibraryViewModel, onOpenVisualizer: () -> Unit) {
     val app = LocalContext.current.applicationContext as GprideApplication
     val scope = rememberCoroutineScope()
     val historyEnabled by app.settings.historyEnabled.collectAsState(initial = true)
@@ -45,6 +45,15 @@ fun SettingsScreen(library: LibraryViewModel) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text("Pengaturan", style = MaterialTheme.typography.titleLarge)
+
+        SettingsCard("Visualizer") {
+            Text(
+                "Gaya, sensitivitas, warna, dan FPS efek visual yang mengikuti musik.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(onClick = onOpenVisualizer) { Text("Buka pengaturan visualizer") }
+        }
 
         SettingsCard("Pemutaran") {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
