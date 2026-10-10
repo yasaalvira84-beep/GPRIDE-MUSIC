@@ -38,10 +38,15 @@ fun SleepTimerButton() {
 
 @Composable
 private fun SleepTimerDialog(state: SleepTimerState, onDismiss: () -> Unit) {
-    val remainingMs by produceState(0L, state.endAtMs) {
+    val remainingMs by produceState(
+        initialValue = ((state.endAtMs ?: 0L) - SystemClock.elapsedRealtime()).coerceAtLeast(0L),
+        key1 = state.endAtMs,
+    ) {
+        // Assign immediately so Compose Lint can verify that the produced state is updated.
+        value = ((state.endAtMs ?: 0L) - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
         while (true) {
-            value = ((state.endAtMs ?: 0L) - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
             delay(1000)
+            value = ((state.endAtMs ?: 0L) - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
         }
     }
     AlertDialog(
