@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -65,6 +66,7 @@ fun VisualizerSettingsScreen(player: PlayerViewModel, onBack: () -> Unit) {
     val active = prefs.enabled && granted && playerState.isPlaying
     val feed = rememberVisualizerFeed(active, prefs.sensitivity / 100f, prefs.fps)
     val color = VisualizerPalettes[prefs.colorIndex.coerceIn(0, VisualizerPalettes.lastIndex)]
+    val accent = VisualizerAccents[prefs.colorIndex.coerceIn(0, VisualizerAccents.lastIndex)]
 
     fun save(updated: VisualizerPrefs) {
         scope.launch { app.settings.setVisualizer(updated) }
@@ -92,7 +94,7 @@ fun VisualizerSettingsScreen(player: PlayerViewModel, onBack: () -> Unit) {
                 .background(MaterialTheme.colorScheme.surfaceContainer),
             contentAlignment = Alignment.Center,
         ) {
-            VisualizerCanvas(prefs.style, feed.bands, color, Modifier.fillMaxSize().padding(16.dp))
+            VisualizerCanvas(prefs.style, feed, color, accent, Modifier.fillMaxSize(), frame = true)
             if (!playerState.isPlaying) {
                 Text(
                     "Putar lagu untuk melihat pratinjau",
@@ -167,7 +169,7 @@ fun VisualizerSettingsScreen(player: PlayerViewModel, onBack: () -> Unit) {
                     Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .background(swatch)
+                        .background(Brush.horizontalGradient(listOf(swatch, VisualizerAccents[index])))
                         .then(
                             if (selected) {
                                 Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)

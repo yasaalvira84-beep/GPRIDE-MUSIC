@@ -60,25 +60,15 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.media3.common.Player
 
-private fun hasRecordPermission(context: Context): Boolean =
-    ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-
 /** Layar Now Playing penuh: sampul album bercincin neon, visualizer, kontrol, dan antrean. */
 @Composable
 fun NowPlayingScreen(vm: PlayerViewModel, song: Song?, onBack: () -> Unit) {
-    val context = LocalContext.current
-    val app = context.applicationContext as GprideApplication
     val state by vm.state.collectAsState()
     val message by vm.message.collectAsState()
-    val prefs by app.settings.visualizer.collectAsState(initial = VisualizerPrefs())
     var dragging by remember { mutableStateOf<Float?>(null) }
     val duration = state.durationMs.coerceAtLeast(1L).toFloat()
 
-    var micGranted by remember { mutableStateOf(hasRecordPermission(context)) }
-    val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { micGranted = it }
-    val active = prefs.enabled && micGranted && state.isPlaying
-    val feed = rememberVisualizerFeed(active, prefs.sensitivity / 100f, prefs.fps)
-    val color = VisualizerPalettes[prefs.colorIndex.coerceIn(0, VisualizerPalettes.lastIndex)]
+    val color = MaterialTheme.colorScheme.primary
 
     LazyColumn(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         item {
@@ -96,13 +86,7 @@ fun NowPlayingScreen(vm: PlayerViewModel, song: Song?, onBack: () -> Unit) {
             }
         }
         item {
-            ArtWithRing(
-                song = song,
-                bands = feed.bands,
-                color = color,
-                live = prefs.enabled && prefs.style == VisualizerStyle.Circular,
-                modifier = Modifier.padding(vertical = 16.dp),
-            )
+            ArtWithRing(song = song, color = color, modifier = Modifier.padding(vertical = 16.dp))
         }
         item {
             Text(
@@ -128,45 +112,6 @@ fun NowPlayingScreen(vm: PlayerViewModel, song: Song?, onBack: () -> Unit) {
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-        }
-        if (prefs.enabled && prefs.style != VisualizerStyle.Circular) {
-            item {
-                VisualizerCanvas(
-                    style = prefs.style,
-                    bands = feed.bands,
-                    color = color,
-                    modifier = Modifier.fillMaxWidth().height(110.dp).padding(horizontal = 24.dp, vertical = 12.dp),
-                )
-            }
-        }
-        if (prefs.enabled && !micGranted) {
-            item {
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 8.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainer)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        "Visualizer butuh izin Rekam audio agar bisa membaca keluaran musik aplikasi ini. " +
-                            "Mikrofon tidak direkam.",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    Button(onClick = { micLauncher.launch(Manifest.permission.RECORD_AUDIO) }) { Text("Izinkan visualizer") }
-                }
-            }
-        } else if (active && feed.failed.value) {
-            item {
-                Text(
-                    "Visualizer tidak tersedia di perangkat ini.",
-                    modifier = Modifier.padding(horizontal = 24.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -279,29 +224,21 @@ fun NowPlayingScreen(vm: PlayerViewModel, song: Song?, onBack: () -> Unit) {
     }
 }
 
-/** Sampul bulat dengan cincin neon; cincin mengikuti audio hanya saat gaya Circular dan [live] aktif. */
+/** Sampul bulat dengan cincin neon statis. */
 @Composable
-private fun ArtWithRing(
-    song: Song?,
-    bands: State<FloatArray>,
-    color: Color,
-    live: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val idle = remember { FloatArray(VISUALIZER_BANDS) }
+private fun ArtWithRing(song: Song?, color: Color, modifier: Modifier = Modifier) {
     Box(modifier.size(290.dp), contentAlignment = Alignment.Center) {
         Canvas(Modifier.size(290.dp)) {
             val radius = size.minDimension / 2f
             drawCircle(
-                color = color.copy(alpha = 0.55f),
-                radius = radius * 0.72f,
-                style = Stroke(width = 3.dp.toPx()),
+                color = color.copy(alpha = 0.12f),
+                radius = radius * 0.86f,
+                style = Stroke(width = 20.dp.toPx()),
             )
-            drawCircularBars(
-                b = if (live) bands.value else idle,
-                color = color,
-                innerFraction = 0.77f,
-                maxLenFraction = 0.21f,
+            drawCircle(
+                color = color.copy(alpha = 0.8f),
+                radius = radius * 0.74f,
+                style = Stroke(width = 3.dp.toPx()),
             )
         }
         AlbumArt(song, Modifier.size(200.dp), shape = CircleShape)

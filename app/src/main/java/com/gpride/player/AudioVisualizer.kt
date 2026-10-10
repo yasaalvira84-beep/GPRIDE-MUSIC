@@ -38,6 +38,14 @@ val VisualizerPalettes: List<Color> = listOf(
     Color(0xFF4D7CFF),
 )
 
+/** Warna kedua tiap palet: batang bergradasi dari warna utama (bass) ke warna ini (treble). */
+val VisualizerAccents: List<Color> = listOf(
+    Color(0xFF00E5FF),
+    Color(0xFFB36BFF),
+    Color(0xFFFF4DDB),
+    Color(0xFF00E5FF),
+)
+
 /**
  * Ubah data FFT Android Visualizer (pasangan real/imajiner bertanda) menjadi [bandCount] level 0..1
  * pada skala logaritmik. [sensitivity] 0..1 menaikkan level (1 = paling peka).
@@ -116,16 +124,21 @@ class AudioVisualizer(private val onBands: (FloatArray) -> Unit) {
     }
 }
 
-class VisualizerFeed(val bands: State<FloatArray>, val failed: State<Boolean>)
+class VisualizerFeed(
+    val bands: State<FloatArray>,
+    val peaks: State<FloatArray>,
+    val failed: State<Boolean>,
+)
 
 /**
  * Menyalakan visualizer hanya selama [active] (layar terlihat, izin ada, lagu diputar).
- * Level dihaluskan per frame di sisi UI sehingga tetap mulus walau data datang ~20 kali per detik.
+ * Level dihaluskan per frame di sisi UI; puncak (peak) turun perlahan di atas tiap batang.
  */
 @Composable
 fun rememberVisualizerFeed(active: Boolean, sensitivity: Float, fps: Int): VisualizerFeed {
     val target = remember { FloatArray(VISUALIZER_BANDS) }
     val shown = remember { mutableStateOf(FloatArray(VISUALIZER_BANDS)) }
+    val peaks = remember { mutableStateOf(FloatArray(VISUALIZER_BANDS)) }
     val failed = remember { mutableStateOf(false) }
     val engine = remember { AudioVisualizer { raw -> raw.copyInto(target) } }
     engine.sensitivity = sensitivity
@@ -142,6 +155,7 @@ fun rememberVisualizerFeed(active: Boolean, sensitivity: Float, fps: Int): Visua
     LaunchedEffect(active, fps) {
         if (!active) {
             shown.value = FloatArray(VISUALIZER_BANDS)
+            peaks.value = FloatArray(VISUALIZER_BANDS)
             return@LaunchedEffect
         }
         val frameNs = 1_000_000_000L / fps.coerceIn(10, 120)
@@ -149,16 +163,20 @@ fun rememberVisualizerFeed(active: Boolean, sensitivity: Float, fps: Int): Visua
         while (isActive) {
             withFrameNanos { now ->
                 if (now - last >= frameNs) {
+                    val dt = if (last == 0L) 1f / 60f else ((now - last) / 1_000_000_000f).coerceAtMost(0.1f)
                     last = now
                     val current = shown.value
-                    shown.value = FloatArray(VISUALIZER_BANDS) { i ->
+                    val next = FloatArray(VISUALIZER_BANDS) { i ->
                         val t = target[i]
                         val c = current[i]
                         if (t > c) c + (t - c) * 0.6f else c + (t - c) * 0.15f
                     }
+                    val previousPeaks = peaks.value
+                    peaks.value = FloatArray(VISUALIZER_BANDS) { i -> maxOf(next[i], previousPeaks[i] - 0.9f * dt) }
+                    shown.value = next
                 }
             }
         }
     }
-    return remember { VisualizerFeed(shown, failed) }
+    return remember { VisualizerFeed(shown, peaks, failed) }
 }

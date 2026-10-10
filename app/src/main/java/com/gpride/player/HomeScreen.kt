@@ -107,6 +107,7 @@ fun HomeScreen(
     val vizActive = prefs.enabled && micGranted && state.isPlaying
     val feed = rememberVisualizerFeed(vizActive, prefs.sensitivity / 100f, prefs.fps)
     val vizColor = VisualizerPalettes[prefs.colorIndex.coerceIn(0, VisualizerPalettes.lastIndex)]
+    val vizAccent = VisualizerAccents[prefs.colorIndex.coerceIn(0, VisualizerAccents.lastIndex)]
 
     val visible = remember(songsById, lib.excludedFolders) {
         songsById.values.filter { it.folderPath !in lib.excludedFolders }
@@ -159,12 +160,15 @@ fun HomeScreen(
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .height(150.dp)
+                    .height(220.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainer),
                 contentAlignment = Alignment.Center,
             ) {
-                VisualizerCanvas(prefs.style, feed.bands, vizColor, Modifier.fillMaxSize().padding(16.dp))
+                VisualizerCanvas(prefs.style, feed, vizColor, vizAccent, Modifier.fillMaxSize(), frame = true)
+                if (prefs.enabled && prefs.style == VisualizerStyle.Circular) {
+                    AlbumArt(shownSong, Modifier.size(92.dp), shape = CircleShape)
+                }
                 when {
                     !prefs.enabled -> Text(
                         "Visualizer dimatikan",
