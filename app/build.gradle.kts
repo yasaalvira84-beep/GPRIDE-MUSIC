@@ -17,6 +17,17 @@ android {
         versionName = "0.1.0"
     }
 
+    // Keystore debug tetap di repo agar setiap build ditandatangani kunci yang sama,
+    // sehingga APK baru bisa dipasang menimpa yang lama tanpa uninstall dan data tetap aman.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
