@@ -29,6 +29,11 @@ enum class VisualizerStyle(val label: String) {
     Circular("Circular"),
     Waveform("Waveform"),
     Particle("Particle"),
+    Mirror("Cermin"),
+    Ripple("Riak"),
+    Dots("Titik"),
+    Area("Area"),
+    Starburst("Bintang"),
 }
 
 val VisualizerPalettes: List<Color> = listOf(

@@ -54,6 +54,11 @@ fun VisualizerCanvas(
             VisualizerStyle.Circular -> drawCircularBars(b, p, color, accent, bass, rotation.value, 0.45f, 0.5f)
             VisualizerStyle.Waveform -> drawWaveform(b, color, accent, bass, rotation.value)
             VisualizerStyle.Particle -> drawParticles(b, color, accent, bass, rotation.value)
+            VisualizerStyle.Mirror -> drawMirror(b, p, color, accent, bass)
+            VisualizerStyle.Ripple -> drawRipple(b, color, accent, bass, rotation.value)
+            VisualizerStyle.Dots -> drawDots(b, color, accent, bass)
+            VisualizerStyle.Area -> drawArea(b, color, accent, bass)
+            VisualizerStyle.Starburst -> drawStarburst(b, color, accent, bass, rotation.value)
         }
         if (frame) {
             drawRoundRect(
@@ -283,4 +288,237 @@ internal fun DrawScope.drawParticles(b: FloatArray, color: Color, accent: Color,
             center = pos,
         )
     }
+}
+
+/** Batang simetris naik dan turun dari garis tengah, dengan titik puncak di kedua sisi. */
+internal fun DrawScope.drawMirror(b: FloatArray, peaks: FloatArray, color: Color, accent: Color, bass: Float) {
+    val n = b.size
+    if (n == 0) return
+    val margin = 16.dp.toPx()
+    val mid = size.height / 2f
+    val maxH = mid * 0.9f
+    val gap = 2.dp.toPx()
+    val barWidth = ((size.width - 2 * margin - gap * (n - 1)) / n).coerceAtLeast(1f)
+
+    drawLine(
+        color = color.copy(alpha = 0.25f + 0.5f * bass),
+        start = Offset(margin, mid),
+        end = Offset(size.width - margin, mid),
+        strokeWidth = 1.dp.toPx(),
+    )
+    for (i in 0 until n) {
+        val t = i / (n - 1).coerceAtLeast(1).toFloat()
+        val barColor = lerp(color, accent, t)
+        val level = b[i].coerceIn(0f, 1f)
+        val h = maxH * (0.02f + 0.98f * level)
+        val x = margin + i * (barWidth + gap)
+        val corner = CornerRadius(barWidth / 2f)
+
+        drawRoundRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(lerp(barColor, Color.White, 0.5f), barColor),
+                startY = mid - h,
+                endY = mid,
+            ),
+            topLeft = Offset(x, mid - h),
+            size = Size(barWidth, h),
+            cornerRadius = corner,
+        )
+        drawRoundRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(barColor, barColor.copy(alpha = 0.25f)),
+                startY = mid,
+                endY = mid + h,
+            ),
+            topLeft = Offset(x, mid),
+            size = Size(barWidth, h),
+            cornerRadius = corner,
+        )
+        val peakH = maxH * (0.02f + 0.98f * peaks.getOrElse(i) { 0f }.coerceIn(0f, 1f))
+        val dot = Color.White.copy(alpha = 0.85f)
+        drawCircle(dot, radius = (barWidth / 2f).coerceAtLeast(1f), center = Offset(x + barWidth / 2f, mid - peakH - 4.dp.toPx()))
+        drawCircle(dot, radius = (barWidth / 2f).coerceAtLeast(1f), center = Offset(x + barWidth / 2f, mid + peakH + 4.dp.toPx()))
+    }
+}
+
+/** Cincin yang memancar keluar dari pusat; kecepatan tetap, ketebalan dan terang mengikuti band dan bass. */
+internal fun DrawScope.drawRipple(b: FloatArray, color: Color, accent: Color, bass: Float, rotationDeg: Float) {
+    if (b.isEmpty()) return
+    val rings = 6
+    val maxR = size.minDimension / 2f
+    // rotationDeg berputar 0..360 per 24 dtk; dikali 8 sehingga satu siklus riak = 3 dtk dan tetap mulus saat putaran ulang
+    val time = (rotationDeg / 360f * 8f) % 1f
+
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(color.copy(alpha = 0.12f + 0.35f * bass), Color.Transparent),
+            center = center,
+            radius = maxR,
+        ),
+        radius = maxR,
+        center = center,
+    )
+    for (i in 0 until rings) {
+        val phase = (time + i / rings.toFloat()) % 1f
+        val level = b[(i * b.size / rings).coerceIn(0, b.size - 1)].coerceIn(0f, 1f)
+        val radius = maxR * (0.12f + 0.88f * phase) * (1f + 0.08f * bass)
+        val fade = (1f - phase)
+        val ringColor = lerp(color, accent, phase)
+        drawCircle(
+            color = ringColor.copy(alpha = (0.10f + 0.25f * level) * fade),
+            radius = radius,
+            center = center,
+            style = Stroke(width = 10.dp.toPx() + 10.dp.toPx() * level),
+        )
+        drawCircle(
+            color = ringColor.copy(alpha = (0.35f + 0.65f * level) * fade),
+            radius = radius,
+            center = center,
+            style = Stroke(width = 1.5.dp.toPx() + 2.dp.toPx() * level),
+        )
+    }
+    drawCircle(
+        color = color.copy(alpha = 0.6f + 0.4f * bass),
+        radius = maxR * (0.07f + 0.05f * bass),
+        center = center,
+    )
+}
+
+/** Matriks titik bergaya LED: tiap kolom menyala dari bawah sesuai level, titik teratas paling terang. */
+internal fun DrawScope.drawDots(b: FloatArray, color: Color, accent: Color, bass: Float) {
+    if (b.isEmpty()) return
+    val cols = 24
+    val rows = 10
+    val margin = 16.dp.toPx()
+    val cellW = (size.width - 2 * margin) / cols
+    val cellH = (size.height - 2 * margin) / rows
+    val radius = (minOf(cellW, cellH) / 2f) * 0.62f
+
+    for (c in 0 until cols) {
+        val lo = c * b.size / cols
+        val hi = ((c + 1) * b.size / cols).coerceAtLeast(lo + 1).coerceAtMost(b.size)
+        var sum = 0f
+        for (k in lo until hi) sum += b[k]
+        val level = (sum / (hi - lo)).coerceIn(0f, 1f)
+        val lit = (level * rows).toInt().coerceIn(0, rows)
+        val t = c / (cols - 1).coerceAtLeast(1).toFloat()
+        val colColor = lerp(color, accent, t)
+        for (r in 0 until rows) {
+            val x = margin + cellW * (c + 0.5f)
+            val y = size.height - margin - cellH * (r + 0.5f)
+            val on = r < lit
+            val heat = r / (rows - 1).coerceAtLeast(1).toFloat()
+            if (on) {
+                val dot = lerp(colColor, Color.White, 0.5f * heat)
+                drawCircle(dot.copy(alpha = 0.20f), radius = radius * 1.8f, center = Offset(x, y))
+                drawCircle(dot.copy(alpha = if (r == lit - 1) 1f else 0.75f), radius = radius, center = Offset(x, y))
+            } else {
+                drawCircle(colColor.copy(alpha = 0.07f + 0.06f * bass), radius = radius * 0.7f, center = Offset(x, y))
+            }
+        }
+    }
+}
+
+/** Gunung berlatar gradasi dengan garis tepi bercahaya, dihaluskan dengan kurva kuadrat. */
+internal fun DrawScope.drawArea(b: FloatArray, color: Color, accent: Color, bass: Float) {
+    val n = b.size
+    if (n < 2) return
+    val margin = 16.dp.toPx()
+    val base = size.height * 0.88f
+    val maxH = base * 0.9f * (1f + 0.08f * bass)
+    val stepX = (size.width - 2 * margin) / (n - 1)
+
+    fun px(i: Int) = margin + i * stepX
+    fun py(i: Int) = base - maxH * (0.02f + 0.98f * b[i].coerceIn(0f, 1f))
+
+    val line = Path()
+    line.moveTo(px(0), py(0))
+    for (i in 1 until n) {
+        val midX = (px(i - 1) + px(i)) / 2f
+        val midY = (py(i - 1) + py(i)) / 2f
+        line.quadraticTo(px(i - 1), py(i - 1), midX, midY)
+    }
+    line.lineTo(px(n - 1), py(n - 1))
+
+    val fill = Path()
+    fill.addPath(line)
+    fill.lineTo(px(n - 1), base)
+    fill.lineTo(px(0), base)
+    fill.close()
+
+    drawPath(
+        path = fill,
+        brush = Brush.verticalGradient(
+            colors = listOf(accent.copy(alpha = 0.55f), color.copy(alpha = 0.05f)),
+            startY = base - maxH,
+            endY = base,
+        ),
+    )
+    drawPath(
+        path = line,
+        brush = Brush.horizontalGradient(listOf(color, accent), startX = margin, endX = size.width - margin),
+        style = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
+        alpha = 0.18f,
+    )
+    drawPath(
+        path = line,
+        brush = Brush.horizontalGradient(listOf(color, accent), startX = margin, endX = size.width - margin),
+        style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
+    )
+}
+
+/** Poligon bintang yang berdenyut: tiap titik sudut didorong keluar oleh band, dengan garis ke pusat. */
+internal fun DrawScope.drawStarburst(b: FloatArray, color: Color, accent: Color, bass: Float, rotationDeg: Float) {
+    val n = b.size
+    if (n == 0) return
+    val points = 48
+    val maxR = size.minDimension / 2f
+    val inner = maxR * 0.22f * (1f + 0.15f * bass)
+    val rot = (rotationDeg * PI / 180.0).toFloat() * 2f
+    val ring = Path()
+    val tips = ArrayList<Offset>(points)
+
+    for (i in 0 until points) {
+        // cermin kiri-kanan agar bentuknya simetris
+        val half = points / 2
+        val idx = (if (i < half) i else points - 1 - i) * (n - 1) / (half - 1).coerceAtLeast(1)
+        val level = b[idx.coerceIn(0, n - 1)].coerceIn(0f, 1f)
+        val angle = (2.0 * PI * i / points - PI / 2.0).toFloat() + rot
+        val r = inner + (maxR * 0.95f - inner) * (0.10f + 0.90f * level)
+        val tip = Offset(center.x + r * cos(angle), center.y + r * sin(angle))
+        tips.add(tip)
+        if (i == 0) ring.moveTo(tip.x, tip.y) else ring.lineTo(tip.x, tip.y)
+
+        val t = i / (points - 1).toFloat()
+        val spoke = lerp(color, accent, t)
+        drawLine(
+            color = spoke.copy(alpha = 0.25f + 0.6f * level),
+            start = Offset(center.x + inner * cos(angle), center.y + inner * sin(angle)),
+            end = tip,
+            strokeWidth = 1.5.dp.toPx(),
+            cap = StrokeCap.Round,
+        )
+    }
+    ring.close()
+    drawPath(
+        path = ring,
+        brush = Brush.radialGradient(
+            colors = listOf(accent.copy(alpha = 0.05f + 0.2f * bass), color.copy(alpha = 0.22f)),
+            center = center,
+            radius = maxR,
+        ),
+    )
+    drawPath(
+        path = ring,
+        color = color.copy(alpha = 0.9f),
+        style = Stroke(width = 2.dp.toPx(), join = StrokeJoin.Round),
+    )
+    for (tip in tips) {
+        drawCircle(Color.White.copy(alpha = 0.85f), radius = 1.8.dp.toPx(), center = tip)
+    }
+    drawCircle(
+        color = color.copy(alpha = 0.5f + 0.5f * bass),
+        radius = inner * 0.9f,
+        style = Stroke(width = 2.dp.toPx() + 2.dp.toPx() * bass),
+    )
 }
