@@ -4,9 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -25,8 +28,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,16 +43,23 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 
+private const val NOW_PLAYING_ROUTE = "nowplaying"
+
 @Composable
 fun GprideApp() {
     // ViewModel di tingkat Activity: satu pengendali playback dan satu state library untuk semua layar.
     val player: PlayerViewModel = viewModel()
     val library: LibraryViewModel = viewModel()
     val playlists: PlaylistViewModel = viewModel()
+    val app = LocalContext.current.applicationContext as GprideApplication
+    val allSongs by app.library.songs.collectAsState()
+    val songsById = remember(allSongs) { allSongs.associateBy { it.id } }
+    val playerState by player.state.collectAsState()
+    val currentSong = playerState.songId?.let { songsById[it] }
+
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
-    val playerState by player.state.collectAsState()
 
     val navigateTo: (Destination) -> Unit = { dest ->
         navController.navigate(dest.route) {
@@ -56,38 +68,44 @@ fun GprideApp() {
             restoreState = true
         }
     }
+    val openNowPlaying: () -> Unit = {
+        navController.navigate(NOW_PLAYING_ROUTE) { launchSingleTop = true }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            Column {
-                if (currentRoute != Destination.Home.route) {
-                    MiniPlayer(
-                        state = playerState,
-                        onOpen = { navigateTo(Destination.Home) },
-                        onToggle = player::togglePlay,
-                        onNext = player::next,
-                    )
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    tonalElevation = 0.dp,
-                ) {
-                    Destination.entries.forEach { dest ->
-                        NavigationBarItem(
-                            selected = currentRoute == dest.route,
-                            onClick = { navigateTo(dest) },
-                            icon = { Icon(dest.icon, contentDescription = stringResource(dest.label)) },
-                            label = { Text(stringResource(dest.label)) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
+            if (currentRoute != NOW_PLAYING_ROUTE) {
+                Column {
+                    if (currentRoute != Destination.Home.route) {
+                        MiniPlayer(
+                            state = playerState,
+                            song = currentSong,
+                            onOpen = openNowPlaying,
+                            onToggle = player::togglePlay,
+                            onNext = player::next,
                         )
+                    }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        tonalElevation = 0.dp,
+                    ) {
+                        Destination.entries.forEach { dest ->
+                            NavigationBarItem(
+                                selected = currentRoute == dest.route,
+                                onClick = { navigateTo(dest) },
+                                icon = { Icon(dest.icon, contentDescription = stringResource(dest.label)) },
+                                label = { Text(stringResource(dest.label)) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
+                            )
+                        }
                     }
                 }
             }
@@ -98,18 +116,36 @@ fun GprideApp() {
             startDestination = Destination.Home.route,
             modifier = Modifier.padding(padding),
         ) {
-            composable(Destination.Home.route) { PlayerScreen(player) }
+            composable(Destination.Home.route) {
+                HomeScreen(
+                    player = player,
+                    library = library,
+                    playlists = playlists,
+                    currentSong = currentSong,
+                    songsById = songsById,
+                    onNavigate = navigateTo,
+                    onOpenNowPlaying = openNowPlaying,
+                )
+            }
             composable(Destination.Library.route) { LibraryScreen(library, player, playlists) }
             composable(Destination.Playlist.route) { PlaylistScreen(playlists, player) }
             composable(Destination.Settings.route) { SettingsScreen(library) }
+            composable(NOW_PLAYING_ROUTE) {
+                NowPlayingScreen(
+                    vm = player,
+                    song = currentSong,
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
     }
 }
 
-/** Mini-player di atas bar navigasi; tampil di semua layar kecuali Beranda saat ada lagu. */
+/** Mini-player di atas bar navigasi; tampil di semua layar kecuali Beranda dan Now Playing saat ada lagu. */
 @Composable
 private fun MiniPlayer(
     state: PlayerUiState,
+    song: Song?,
     onOpen: () -> Unit,
     onToggle: () -> Unit,
     onNext: () -> Unit,
@@ -131,6 +167,8 @@ private fun MiniPlayer(
             Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            AlbumArt(song, Modifier.size(44.dp))
+            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
                     state.title,

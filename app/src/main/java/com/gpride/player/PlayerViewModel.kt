@@ -38,6 +38,8 @@ data class PlayerUiState(
     val shuffle: Boolean = false,
     val queue: List<QueueEntry> = emptyList(),
     val currentIndex: Int = -1,
+    /** ID MediaStore lagu yang sedang diputar; null untuk berkas dari pemilih dokumen. */
+    val songId: Long? = null,
 )
 
 private fun Song.toMediaItem(): MediaItem = MediaItem.Builder()
@@ -149,6 +151,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             shuffle = p.shuffleModeEnabled,
             queue = queue,
             currentIndex = if (p.mediaItemCount == 0) -1 else p.currentMediaItemIndex,
+            songId = p.currentMediaItem?.mediaId?.toLongOrNull(),
         )
     }
 
