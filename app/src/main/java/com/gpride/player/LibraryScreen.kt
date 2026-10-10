@@ -237,6 +237,10 @@ private fun LibraryContent(vm: LibraryViewModel, player: PlayerViewModel, playli
                         }.padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        if (tab == 1 || tab == 2) {
+                            AlbumArt(g.songs.firstOrNull(), Modifier.size(48.dp))
+                            Spacer(Modifier.width(12.dp))
+                        }
                         Column(Modifier.weight(1f)) {
                             Text(g.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(g.subtitle, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
