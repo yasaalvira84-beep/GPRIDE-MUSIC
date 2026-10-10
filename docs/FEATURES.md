@@ -39,7 +39,12 @@ Semua fitur di bawah ini adalah bagian dari rencana aplikasi pribadi. Urutan imp
 2. **Circular Spectrum** — spektrum melingkar, opsional dengan album art di tengah.
 3. **Waveform** — garis/gelombang animasi.
 4. **Particle Flow** — partikel yang bergerak berdasarkan intensitas audio.
-5. **Static/Off** — visualizer dapat dimatikan.
+5. **Cermin** — batang simetris naik dan turun dari garis tengah.
+6. **Riak** — cincin memancar dari pusat mengikuti bass.
+7. **Titik** — matriks titik bergaya LED.
+8. **Area** — gunung bergradasi dengan garis tepi bercahaya.
+9. **Bintang** — poligon bintang berdenyut dengan jari-jari.
+10. **Static/Off** — visualizer dapat dimatikan.
 
 ### Pengaturan visual
 - Sensitivitas.
