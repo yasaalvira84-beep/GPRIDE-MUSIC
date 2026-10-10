@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 
 /** Pengaturan sementara; Tampilan, Audio, dan lainnya menyusul di tahap berikutnya. */
 @Composable
-fun SettingsScreen(library: LibraryViewModel, onOpenVisualizer: () -> Unit) {
+fun SettingsScreen(library: LibraryViewModel, onOpenVisualizer: () -> Unit, onOpenAudio: () -> Unit) {
     val app = LocalContext.current.applicationContext as GprideApplication
     val scope = rememberCoroutineScope()
     val historyEnabled by app.settings.historyEnabled.collectAsState(initial = true)
@@ -54,6 +54,15 @@ fun SettingsScreen(library: LibraryViewModel, onOpenVisualizer: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Button(onClick = onOpenVisualizer) { Text("Buka pengaturan visualizer") }
+        }
+
+        SettingsCard("Audio") {
+            Text(
+                "Equalizer, bass boost, pudar volume antarlagu, dan lewati bagian hening.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(onClick = onOpenAudio) { Text("Buka pengaturan audio") }
         }
 
         SettingsCard("Pemutaran") {

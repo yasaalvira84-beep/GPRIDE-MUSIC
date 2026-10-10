@@ -82,7 +82,7 @@ fun NowPlayingScreen(vm: PlayerViewModel, song: Song?, onBack: () -> Unit) {
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleMedium,
                 )
-                Box(Modifier.size(48.dp))
+                SleepTimerButton()
             }
         }
         item {

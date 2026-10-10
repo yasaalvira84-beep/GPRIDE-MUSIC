@@ -26,6 +26,12 @@ class SettingsStore(private val context: Context) {
     private val visFpsKey = intPreferencesKey("vis_fps")
     private val visColorKey = intPreferencesKey("vis_color")
     private val lyricsOnlineKey = booleanPreferencesKey("lyrics_online")
+    private val eqEnabledKey = booleanPreferencesKey("eq_enabled")
+    private val eqPresetKey = intPreferencesKey("eq_preset")
+    private val eqCustomKey = stringPreferencesKey("eq_custom")
+    private val eqBassKey = intPreferencesKey("eq_bass")
+    private val fadeSecKey = intPreferencesKey("fade_sec")
+    private val skipSilenceKey = booleanPreferencesKey("skip_silence")
 
     val historyEnabled: Flow<Boolean> = context.dataStore.data.map { it[historyKey] ?: true }
 
@@ -38,6 +44,29 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setLyricsOnline(enabled: Boolean) {
         context.dataStore.edit { it[lyricsOnlineKey] = enabled }
+    }
+
+    val audio: Flow<AudioPrefs> = context.dataStore.data.map { p ->
+        val d = AudioPrefs()
+        AudioPrefs(
+            eqEnabled = p[eqEnabledKey] ?: d.eqEnabled,
+            eqPreset = (p[eqPresetKey] ?: d.eqPreset).coerceIn(-1, EqPresets.lastIndex),
+            eqCustomMb = (p[eqCustomKey] ?: "").split(",").mapNotNull { it.trim().toIntOrNull() },
+            bassBoost = (p[eqBassKey] ?: d.bassBoost).coerceIn(0, 1000),
+            fadeSec = (p[fadeSecKey] ?: d.fadeSec).coerceIn(0, 8),
+            skipSilence = p[skipSilenceKey] ?: d.skipSilence,
+        )
+    }
+
+    suspend fun setAudio(prefs: AudioPrefs) {
+        context.dataStore.edit {
+            it[eqEnabledKey] = prefs.eqEnabled
+            it[eqPresetKey] = prefs.eqPreset
+            it[eqCustomKey] = prefs.eqCustomMb.joinToString(",")
+            it[eqBassKey] = prefs.bassBoost
+            it[fadeSecKey] = prefs.fadeSec
+            it[skipSilenceKey] = prefs.skipSilence
+        }
     }
 
     val visualizer: Flow<VisualizerPrefs> = context.dataStore.data.map { p ->
