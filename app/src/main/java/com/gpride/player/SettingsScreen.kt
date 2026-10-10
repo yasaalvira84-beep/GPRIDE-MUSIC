@@ -1,13 +1,19 @@
 package com.gpride.player
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
@@ -26,7 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
-/** Pengaturan sementara Tahap 3; tema, visualizer, dan lainnya menyusul di tahap berikutnya. */
+/** Pengaturan sementara; Tampilan, Audio, Visualizer, dan lainnya menyusul di tahap berikutnya. */
 @Composable
 fun SettingsScreen(library: LibraryViewModel) {
     val app = LocalContext.current.applicationContext as GprideApplication
@@ -34,22 +40,33 @@ fun SettingsScreen(library: LibraryViewModel) {
     val historyEnabled by app.settings.historyEnabled.collectAsState(initial = true)
     var confirmClear by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("Simpan riwayat pemutaran")
-                Text(
-                    "Dipakai untuk daftar Riwayat dan Sering diputar. Disimpan hanya di perangkat ini.",
-                    style = MaterialTheme.typography.bodySmall,
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text("Pengaturan", style = MaterialTheme.typography.titleLarge)
+
+        SettingsCard("Pemutaran") {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Simpan riwayat pemutaran")
+                    Text(
+                        "Dipakai untuk daftar Riwayat dan Sering diputar. Disimpan hanya di perangkat ini.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = historyEnabled,
+                    onCheckedChange = { scope.launch { app.settings.setHistoryEnabled(it) } },
                 )
             }
-            Switch(
-                checked = historyEnabled,
-                onCheckedChange = { scope.launch { app.settings.setHistoryEnabled(it) } },
-            )
+            OutlinedButton(onClick = { confirmClear = true }) { Text("Hapus riwayat") }
         }
-        OutlinedButton(onClick = { confirmClear = true }) { Text("Hapus riwayat") }
-        Button(onClick = library::refresh) { Text("Pindai ulang library") }
+
+        SettingsCard("Library") {
+            Button(onClick = library::refresh) { Text("Pindai ulang library") }
+        }
     }
 
     if (confirmClear) {
@@ -65,5 +82,19 @@ fun SettingsScreen(library: LibraryViewModel) {
             },
             dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Batal") } },
         )
+    }
+}
+
+@Composable
+private fun SettingsCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            content()
+        }
     }
 }
