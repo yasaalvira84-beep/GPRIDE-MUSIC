@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: gpride-ci-${{ github.ref }}
@@ -58,6 +58,18 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
+
+      # APK langsung (bukan zip) di halaman Releases, tag "latest", selalu ditimpa build terbaru.
+      - name: Publish APK ke Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/*.apk GPRIDE-debug.apk
+          gh release view latest >/dev/null 2>&1 || gh release create latest \
+            --prerelease --target "${{ github.sha }}" \
+            --title "GPRIDE debug terbaru" --notes "APK debug dari build manual terakhir."
+          gh release edit latest --notes "APK debug dari build manual terakhir (commit ${{ github.sha }})."
+          gh release upload latest GPRIDE-debug.apk --clobber
 
       - name: Upload lint reports
         if: always()
