@@ -62,6 +62,12 @@ Semua fitur di bawah ini adalah bagian dari rencana aplikasi pribadi. Urutan imp
 - Hindari mengklaim visualisasi frekuensi akurat jika hanya menggunakan estimasi posisi/durasi lagu.
 - Uji penggunaan CPU, GPU, baterai, serta stabilitas ketika berpindah aplikasi.
 
+### Lirik otomatis
+- Saat lagu diputar, lirik dicari otomatis dari LRCLIB (layanan publik, tanpa login/kunci API) memakai judul, artis, album, dan durasi.
+- Lirik berwaktu (LRC) disorot per baris mengikuti posisi lagu; ketuk baris untuk lompat ke bagian itu. Bila hanya ada lirik biasa, ditampilkan dapat digulir.
+- Hasil disimpan di perangkat; lagu yang tidak ditemukan tidak dicari ulang selama 7 hari kecuali dicari ulang manual.
+- Dapat dimatikan di Pengaturan > Lirik. Hanya teks metadata yang dikirim; file musik tidak diunggah.
+
 ## 6. Tampilan dan aksesibilitas
 - Desain gelap sebagai tema awal; opsi AMOLED dan tema terang dapat disediakan.
 - Warna aksen yang dapat dipilih.
