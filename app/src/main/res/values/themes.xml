@@ -1,3 +1,5 @@
 <resources>
-    <style name="Theme.GPRIDE" parent="android:Theme.Material.NoActionBar" />
+    <style name="Theme.GPRIDE" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/neon_background</item>
+    </style>
 </resources>
