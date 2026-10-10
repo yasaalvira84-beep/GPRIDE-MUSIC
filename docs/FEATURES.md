@@ -68,6 +68,11 @@ Semua fitur di bawah ini adalah bagian dari rencana aplikasi pribadi. Urutan imp
 - Hasil disimpan di perangkat; lagu yang tidak ditemukan tidak dicari ulang selama 7 hari kecuali dicari ulang manual.
 - Dapat dimatikan di Pengaturan > Lirik. Hanya teks metadata yang dikirim; file musik tidak diunggah.
 
+### Fitur audio (Tahap 6)
+- **Timer tidur**: 15/30/45/60/90 menit atau setelah lagu ini selesai; volume dipudarkan perlahan sebelum berhenti. Dijalankan di layanan pemutar sehingga tetap bekerja saat aplikasi ditutup.
+- **Equalizer**: preset (Flat, Bass Boost, Vokal, Treble, Rock, Pop, Elektronik, Akustik) atau kustom per band, plus bass boost. Bergantung dukungan perangkat.
+- **Pudar volume antarlagu** 0-8 detik (bukan crossfade tumpang-tindih) dan **lewati bagian hening**. Gapless ditangani ExoPlayer bila format file mendukung.
+
 ## 6. Tampilan dan aksesibilitas
 - Desain gelap sebagai tema awal; opsi AMOLED dan tema terang dapat disediakan.
 - Warna aksen yang dapat dipilih.
