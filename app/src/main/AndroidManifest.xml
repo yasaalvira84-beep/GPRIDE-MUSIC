@@ -8,6 +8,12 @@
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+    <!-- Dipakai hanya oleh Visualizer untuk membaca keluaran musik aplikasi ini, bukan merekam mikrofon. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <uses-feature
+        android:name="android.hardware.microphone"
+        android:required="false" />
 
     <application
         android:name=".GprideApplication"
