@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -63,7 +65,10 @@ private fun homeAudioPermission(): String =
 private fun homeHasAudioPermission(context: Context): Boolean =
     ContextCompat.checkSelfPermission(context, homeAudioPermission()) == PackageManager.PERMISSION_GRANTED
 
-/** Beranda: pencarian, Lanjut Diputar, Koleksi, dan Playlist. */
+private fun homeHasRecordPermission(context: Context): Boolean =
+    ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+
+/** Beranda: pencarian, visualizer, Lanjut Diputar, Koleksi, dan Playlist. */
 @Composable
 fun HomeScreen(
     player: PlayerViewModel,
@@ -95,6 +100,13 @@ fun HomeScreen(
     var granted by remember { mutableStateOf(homeHasAudioPermission(context)) }
     val audioLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }
     LaunchedEffect(granted) { if (granted && songsById.isEmpty()) library.refresh() }
+
+    val prefs by app.settings.visualizer.collectAsState(initial = VisualizerPrefs())
+    var micGranted by remember { mutableStateOf(homeHasRecordPermission(context)) }
+    val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { micGranted = it }
+    val vizActive = prefs.enabled && micGranted && state.isPlaying
+    val feed = rememberVisualizerFeed(vizActive, prefs.sensitivity / 100f, prefs.fps)
+    val vizColor = VisualizerPalettes[prefs.colorIndex.coerceIn(0, VisualizerPalettes.lastIndex)]
 
     val visible = remember(songsById, lib.excludedFolders) {
         songsById.values.filter { it.folderPath !in lib.excludedFolders }
@@ -141,6 +153,46 @@ fun HomeScreen(
                 Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(12.dp))
                 Text("Cari lagu, artis, album...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        item {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                VisualizerCanvas(prefs.style, feed.bands, vizColor, Modifier.fillMaxSize().padding(16.dp))
+                when {
+                    !prefs.enabled -> Text(
+                        "Visualizer dimatikan",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    !micGranted -> Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            "Butuh izin Rekam audio untuk membaca keluaran musik (mikrofon tidak direkam).",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Button(onClick = { micLauncher.launch(Manifest.permission.RECORD_AUDIO) }) { Text("Izinkan visualizer") }
+                    }
+                    !state.isPlaying -> Text(
+                        "Putar lagu untuk melihat visualizer",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    feed.failed.value -> Text(
+                        "Visualizer tidak tersedia di perangkat ini.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         }
         if (!granted) {
