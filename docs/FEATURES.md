@@ -62,11 +62,13 @@ Semua fitur di bawah ini adalah bagian dari rencana aplikasi pribadi. Urutan imp
 - Hindari mengklaim visualisasi frekuensi akurat jika hanya menggunakan estimasi posisi/durasi lagu.
 - Uji penggunaan CPU, GPU, baterai, serta stabilitas ketika berpindah aplikasi.
 
-### Lirik otomatis
-- Saat lagu diputar, lirik dicari otomatis dari LRCLIB (layanan publik, tanpa login/kunci API) memakai judul, artis, album, dan durasi.
-- Lirik berwaktu (LRC) disorot per baris mengikuti posisi lagu; ketuk baris untuk lompat ke bagian itu. Bila hanya ada lirik biasa, ditampilkan dapat digulir.
-- Hasil disimpan di perangkat; lagu yang tidak ditemukan tidak dicari ulang selama 7 hari kecuali dicari ulang manual.
-- Dapat dimatikan di Pengaturan > Lirik. Hanya teks metadata yang dikirim; file musik tidak diunggah.
+### Lirik otomatis (dibuat dari suara lagu)
+- Tombol **Lirik** di kartu Lanjut Diputar (Beranda) membuka layar lirik. Panel lirik ringkas juga ada di layar Sedang Diputar.
+- Lirik **dibuat** dari audio lagu: file audio ditranskripsi oleh model Whisper lewat Groq atau OpenAI memakai kunci API milik pengguna, menghasilkan teks berwaktu (disimpan sebagai LRC di perangkat).
+- Baris yang sedang dinyanyikan disorot dan layar bergulir otomatis; ketuk baris untuk lompat ke bagian itu.
+- Pengaturan: penyedia, kunci API, dan bahasa lagu di Pengaturan > Lirik otomatis. Ada tombol Buat ulang dan Hapus.
+- Privasi: audio **diunggah** ke penyedia yang dipilih hanya saat pengguna menekan Buat lirik otomatis, setelah persetujuan. Batas layanan 25 MB per file; format yang didukung mp3, mp4, m4a, wav, webm (FLAC/Ogg mungkin ditolak).
+- Hasil bisa salah dengar, terutama pada musik ramai atau bahasa daerah; hasilnya bukan lirik resmi.
 
 ### Fitur audio (Tahap 6)
 - **Timer tidur**: 15/30/45/60/90 menit atau setelah lagu ini selesai; volume dipudarkan perlahan sebelum berhenti. Dijalankan di layanan pemutar sehingga tetap bekerja saat aplikasi ditutup.
