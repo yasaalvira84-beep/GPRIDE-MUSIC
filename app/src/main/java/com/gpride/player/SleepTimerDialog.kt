@@ -11,10 +11,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
@@ -38,15 +39,11 @@ fun SleepTimerButton() {
 
 @Composable
 private fun SleepTimerDialog(state: SleepTimerState, onDismiss: () -> Unit) {
-    val remainingMs by produceState(
-        initialValue = ((state.endAtMs ?: 0L) - SystemClock.elapsedRealtime()).coerceAtLeast(0L),
-        key1 = state.endAtMs,
-    ) {
-        // Assign immediately so Compose Lint can verify that the produced state is updated.
-        value = ((state.endAtMs ?: 0L) - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
+    var remainingMs by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(state.endAtMs) {
         while (true) {
+            remainingMs = ((state.endAtMs ?: 0L) - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
             delay(1000)
-            value = ((state.endAtMs ?: 0L) - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
         }
     }
     AlertDialog(
