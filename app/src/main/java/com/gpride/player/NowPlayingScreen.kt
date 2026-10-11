@@ -173,11 +173,9 @@ fun NowPlayingScreen(vm: PlayerViewModel, song: Song?, onBack: () -> Unit) {
         }
         item {
             LyricsPanel(
-                songKey = state.songId?.toString() ?: "t${"${state.artist}|${state.title}".hashCode()}",
+                songKey = lyricsKey(state.songId, state.artist, state.title),
                 title = state.title,
-                artist = state.artist,
-                album = song?.album,
-                durationMs = state.durationMs,
+                uri = state.uri,
                 positionMs = state.positionMs,
                 onSeek = vm::seekTo,
             )

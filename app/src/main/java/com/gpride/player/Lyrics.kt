@@ -64,3 +64,59 @@ fun cleanTitle(title: String): String =
 /** MediaStore memakai "<unknown>" bila artis tidak ada. */
 fun cleanArtist(artist: String?): String? =
     artist?.trim()?.takeIf { it.isNotEmpty() && !it.equals("<unknown>", ignoreCase = true) }
+
+/** Layanan transkripsi berformat OpenAI-compatible (endpoint /audio/transcriptions). */
+data class LyricsProvider(val label: String, val url: String, val model: String)
+
+val LyricsProviders: List<LyricsProvider> = listOf(
+    LyricsProvider("Groq", "https://api.groq.com/openai/v1/audio/transcriptions", "whisper-large-v3"),
+    LyricsProvider("OpenAI", "https://api.openai.com/v1/audio/transcriptions", "whisper-1"),
+)
+
+/** Kode bahasa Whisper; string kosong berarti dideteksi otomatis. */
+val LyricsLanguages: List<Pair<String, String>> = listOf(
+    "" to "Otomatis",
+    "id" to "Indonesia",
+    "en" to "Inggris",
+    "ms" to "Melayu",
+)
+
+data class LyricsPrefs(
+    val provider: Int = 0,
+    val apiKey: String = "",
+    val language: String = "",
+    /** Pengguna sudah menyetujui pengunggahan audio ke penyedia terpilih. */
+    val consent: Boolean = false,
+)
+
+/** Kunci cache lirik: ID MediaStore bila ada, selain itu hash artis+judul. */
+fun lyricsKey(songId: Long?, artist: String?, title: String): String =
+    songId?.toString() ?: "t${"$artist|$title".hashCode()}"
+
+/** "mm:ss.xx" untuk format LRC. */
+fun formatLrcTime(ms: Long): String {
+    val total = ms.coerceAtLeast(0L)
+    val minutes = total / 60_000
+    val seconds = (total % 60_000) / 1000
+    val centis = (total % 1000) / 10
+    return "%02d:%02d.%02d".format(minutes, seconds, centis)
+}
+
+fun segmentsToLrc(lines: List<LyricLine>): String =
+    lines.joinToString("\n") { "[${formatLrcTime(it.timeMs)}]${it.text.replace('\n', ' ').trim()}" }
+
+private val HALLUCINATIONS = listOf(
+    "thanks for watching",
+    "thank you for watching",
+    "terima kasih telah menonton",
+    "terima kasih sudah menonton",
+    "subtitles by",
+    "subtitle by",
+    "amara.org",
+)
+
+/** Whisper kerap "mengarang" kalimat penutup video saat bagian instrumental; buang yang jelas begitu. */
+fun isLikelyHallucination(text: String): Boolean {
+    val t = text.lowercase()
+    return HALLUCINATIONS.any { t.contains(it) }
+}

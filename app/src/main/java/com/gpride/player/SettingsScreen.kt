@@ -38,7 +38,6 @@ fun SettingsScreen(library: LibraryViewModel, onOpenVisualizer: () -> Unit, onOp
     val app = LocalContext.current.applicationContext as GprideApplication
     val scope = rememberCoroutineScope()
     val historyEnabled by app.settings.historyEnabled.collectAsState(initial = true)
-    val lyricsOnline by app.settings.lyricsOnline.collectAsState(initial = true)
     var confirmClear by remember { mutableStateOf(false) }
 
     Column(
@@ -83,23 +82,15 @@ fun SettingsScreen(library: LibraryViewModel, onOpenVisualizer: () -> Unit, onOp
             OutlinedButton(onClick = { confirmClear = true }) { Text("Hapus riwayat") }
         }
 
-        SettingsCard("Lirik") {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Cari lirik otomatis")
-                    Text(
-                        "Mencari lirik dari LRCLIB lewat internet. Hanya judul, artis, album, dan durasi yang dikirim; " +
-                            "file musik tidak diunggah. Hasil disimpan di perangkat.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Switch(
-                    checked = lyricsOnline,
-                    onCheckedChange = { scope.launch { app.settings.setLyricsOnline(it) } },
-                )
-            }
-            OutlinedButton(onClick = { app.lyrics.clearCache() }) { Text("Hapus cache lirik") }
+        SettingsCard("Lirik otomatis") {
+            Text(
+                "Lirik dibuat dari suara lagu dengan Whisper (tombol Lirik di Beranda). Butuh kunci API milik Anda; " +
+                    "audio lagu diunggah ke penyedia yang dipilih hanya saat Anda menekan Buat lirik otomatis.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            LyricsApiSetup()
+            OutlinedButton(onClick = { app.lyrics.clearAll() }) { Text("Hapus semua lirik tersimpan") }
         }
 
         SettingsCard("Library") {

@@ -78,6 +78,7 @@ fun HomeScreen(
     songsById: Map<Long, Song>,
     onNavigate: (Destination) -> Unit,
     onOpenNowPlaying: () -> Unit,
+    onOpenLyrics: () -> Unit,
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as GprideApplication
@@ -251,6 +252,12 @@ fun HomeScreen(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                    }
+                    if (hasCurrent) {
+                        TextButton(
+                            onClick = onOpenLyrics,
+                            contentPadding = PaddingValues(horizontal = 10.dp),
+                        ) { Text("Lirik") }
                     }
                     if (shownTitle != null) {
                         FilledIconButton(onClick = {

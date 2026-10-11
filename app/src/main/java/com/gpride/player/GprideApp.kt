@@ -46,6 +46,7 @@ import androidx.navigation.compose.rememberNavController
 private const val NOW_PLAYING_ROUTE = "nowplaying"
 private const val VISUALIZER_ROUTE = "visualizer"
 private const val AUDIO_ROUTE = "audio"
+private const val LYRICS_ROUTE = "lyrics"
 
 @Composable
 fun GprideApp() {
@@ -95,7 +96,8 @@ fun GprideApp() {
                     ) {
                         Destination.entries.forEach { dest ->
                             val selected = currentRoute == dest.route ||
-                                (dest == Destination.Settings && (currentRoute == VISUALIZER_ROUTE || currentRoute == AUDIO_ROUTE))
+                                (dest == Destination.Settings && (currentRoute == VISUALIZER_ROUTE || currentRoute == AUDIO_ROUTE)) ||
+                                (dest == Destination.Home && currentRoute == LYRICS_ROUTE)
                             NavigationBarItem(
                                 selected = selected,
                                 onClick = { navigateTo(dest) },
@@ -129,6 +131,7 @@ fun GprideApp() {
                     songsById = songsById,
                     onNavigate = navigateTo,
                     onOpenNowPlaying = openNowPlaying,
+                    onOpenLyrics = { navController.navigate(LYRICS_ROUTE) { launchSingleTop = true } },
                 )
             }
             composable(Destination.Library.route) { LibraryScreen(library, player, playlists) }
@@ -146,6 +149,9 @@ fun GprideApp() {
                     song = currentSong,
                     onBack = { navController.popBackStack() },
                 )
+            }
+            composable(LYRICS_ROUTE) {
+                LyricsScreen(player = player, onBack = { navController.popBackStack() })
             }
             composable(AUDIO_ROUTE) {
                 AudioSettingsScreen(onBack = { navController.popBackStack() })

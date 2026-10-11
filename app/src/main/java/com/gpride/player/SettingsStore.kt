@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -26,7 +25,10 @@ class SettingsStore(private val context: Context) {
     private val visSensitivityKey = intPreferencesKey("vis_sensitivity")
     private val visFpsKey = intPreferencesKey("vis_fps")
     private val visColorKey = intPreferencesKey("vis_color")
-    private val lyricsOnlineKey = booleanPreferencesKey("lyrics_online")
+    private val lyricsProviderKey = intPreferencesKey("lyrics_provider")
+    private val lyricsApiKeyKey = stringPreferencesKey("lyrics_api_key")
+    private val lyricsLangKey = stringPreferencesKey("lyrics_lang")
+    private val lyricsConsentKey = booleanPreferencesKey("lyrics_consent")
     private val eqEnabledKey = booleanPreferencesKey("eq_enabled")
     private val eqPresetKey = intPreferencesKey("eq_preset")
     private val eqCustomKey = stringPreferencesKey("eq_custom")
@@ -40,11 +42,23 @@ class SettingsStore(private val context: Context) {
         context.dataStore.edit { it[historyKey] = enabled }
     }
 
-    /** Cari lirik otomatis lewat internet (mengirim judul/artis/album/durasi ke LRCLIB). */
-    val lyricsOnline: Flow<Boolean> = context.dataStore.data.map { it[lyricsOnlineKey] ?: true }
+    /** Pengaturan pembuatan lirik otomatis (penyedia transkripsi, kunci API, bahasa, persetujuan unggah). */
+    val lyricsPrefs: Flow<LyricsPrefs> = context.dataStore.data.map { p ->
+        LyricsPrefs(
+            provider = (p[lyricsProviderKey] ?: 0).coerceIn(0, LyricsProviders.lastIndex),
+            apiKey = p[lyricsApiKeyKey] ?: "",
+            language = p[lyricsLangKey] ?: "",
+            consent = p[lyricsConsentKey] ?: false,
+        )
+    }
 
-    suspend fun setLyricsOnline(enabled: Boolean) {
-        context.dataStore.edit { it[lyricsOnlineKey] = enabled }
+    suspend fun setLyrics(prefs: LyricsPrefs) {
+        context.dataStore.edit {
+            it[lyricsProviderKey] = prefs.provider
+            it[lyricsApiKeyKey] = prefs.apiKey
+            it[lyricsLangKey] = prefs.language
+            it[lyricsConsentKey] = prefs.consent
+        }
     }
 
     val audio: Flow<AudioPrefs> = context.dataStore.data.map { p ->

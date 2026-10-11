@@ -40,6 +40,8 @@ data class PlayerUiState(
     val currentIndex: Int = -1,
     /** ID MediaStore lagu yang sedang diputar; null untuk berkas dari pemilih dokumen. */
     val songId: Long? = null,
+    /** URI berkas lagu yang sedang diputar (dipakai membuat lirik otomatis). */
+    val uri: String? = null,
 )
 
 private fun Song.toMediaItem(): MediaItem = MediaItem.Builder()
@@ -152,6 +154,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             queue = queue,
             currentIndex = if (p.mediaItemCount == 0) -1 else p.currentMediaItemIndex,
             songId = p.currentMediaItem?.mediaId?.toLongOrNull(),
+            uri = p.currentMediaItem?.localConfiguration?.uri?.toString(),
         )
     }
 
