@@ -49,19 +49,53 @@ class LyricsRepository(private val context: Context) {
 
     private fun lrcFile(key: String) = File(dir, "$key.lrc")
 
+    private fun txtFile(key: String) = File(dir, "$key.txt")
+
     private fun setStatus(key: String, state: LyricsState) {
         _status.update { it + (key to state) }
     }
 
-    /** Lirik tersimpan untuk lagu ini, atau null. */
+    /** Lirik tersimpan untuk lagu ini (berwaktu .lrc atau lirik biasa .txt), atau null. */
     fun cached(key: String): Lyrics? {
-        val f = lrcFile(key).takeIf { it.exists() } ?: return null
-        val lines = parseLrc(f.readText())
-        return if (lines.isNotEmpty()) Lyrics(lines, synced = true) else null
+        lrcFile(key).takeIf { it.exists() }?.let { f ->
+            val lines = parseLrc(f.readText())
+            if (lines.isNotEmpty()) return Lyrics(lines, synced = true)
+        }
+        txtFile(key).takeIf { it.exists() }?.let { f ->
+            val lines = plainLyrics(f.readText())
+            if (lines.isNotEmpty()) return Lyrics(lines, synced = false)
+        }
+        return null
+    }
+
+    /** Teks mentah lirik tersimpan untuk diisi ke editor; kosong bila belum ada. */
+    fun rawText(key: String): String {
+        val f = lrcFile(key).takeIf { it.exists() } ?: txtFile(key).takeIf { it.exists() }
+        return f?.readText().orEmpty()
+    }
+
+    /**
+     * Menyimpan teks hasil sunting/impor. Bila ada penanda waktu "[mm:ss.xx]" disimpan sebagai LRC berwaktu,
+     * selain itu sebagai lirik biasa. Mengembalikan false bila teks kosong.
+     */
+    fun save(key: String, text: String): Boolean {
+        val clean = text.replace("\uFEFF", "").trim()
+        if (clean.isEmpty()) return false
+        val lines = parseLrc(clean)
+        if (lines.isNotEmpty()) {
+            lrcFile(key).writeText(segmentsToLrc(lines))
+            txtFile(key).delete()
+        } else {
+            txtFile(key).writeText(clean)
+            lrcFile(key).delete()
+        }
+        cached(key)?.let { setStatus(key, LyricsState.Found(it)) }
+        return true
     }
 
     fun clear(key: String) {
         lrcFile(key).delete()
+        txtFile(key).delete()
         _status.update { it - key }
     }
 
@@ -105,6 +139,7 @@ class LyricsRepository(private val context: Context) {
             throw LyricsException("Tidak ada vokal yang terdeteksi di lagu ini (mungkin instrumental).")
         }
         lrcFile(key).writeText(segmentsToLrc(lines))
+        txtFile(key).delete()
         return LyricsState.Found(Lyrics(lines, synced = true))
     }
 

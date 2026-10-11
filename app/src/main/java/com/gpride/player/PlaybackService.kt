@@ -54,12 +54,14 @@ class PlaybackService : MediaSessionService() {
             .setHandleAudioBecomingNoisy(true) // jeda saat headset dicabut
             .build()
         exo = player
+        PlayerHolder.player = player
         // ID sesi audio dipakai UI untuk menempelkan Visualizer ke keluaran pemutar ini.
         AudioSessionHolder.id = player.audioSessionId
         attachEffects(player.audioSessionId)
         player.addListener(
             object : Player.Listener {
                 override fun onEvents(p: Player, events: Player.Events) {
+                    updateWidget(p)
                     (p as? ExoPlayer)?.let {
                         AudioSessionHolder.id = it.audioSessionId
                         if (it.audioSessionId != effectsSessionId) attachEffects(it.audioSessionId)
@@ -111,6 +113,18 @@ class PlaybackService : MediaSessionService() {
             if (abs(p.volume - target) > 0.01f) p.volume = target
             delay(if (p.isPlaying) 100L else 500L)
         }
+    }
+
+    /** Memperbarui widget layar utama bila judul, artis, atau status putar berubah. */
+    private fun updateWidget(p: Player) {
+        val title = p.mediaMetadata.title?.toString().orEmpty()
+        val artist = p.mediaMetadata.artist?.toString().orEmpty()
+        val playing = p.isPlaying
+        if (title == WidgetState.title && artist == WidgetState.artist && playing == WidgetState.playing) return
+        WidgetState.title = title
+        WidgetState.artist = artist
+        WidgetState.playing = playing
+        PlayerWidgetProvider.refresh(this)
     }
 
     private fun attachEffects(sessionId: Int) {
@@ -183,6 +197,9 @@ class PlaybackService : MediaSessionService() {
 
     override fun onDestroy() {
         scope.cancel()
+        PlayerHolder.player = null
+        WidgetState.playing = false
+        PlayerWidgetProvider.refresh(this)
         releaseEffects()
         PlaybackEffects.eqInfo.value = null
         PlaybackEffects.cancelSleep()

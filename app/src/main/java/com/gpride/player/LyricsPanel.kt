@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -78,7 +79,7 @@ fun LyricsPanel(
         Text("Lirik", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
         when (state) {
             is LyricsState.Found -> {
-                SyncedWindow(state.lyrics.lines, positionMs, onSeek)
+                if (state.lyrics.synced) SyncedWindow(state.lyrics.lines, positionMs, onSeek) else PlainWindow(state.lyrics.lines)
                 LyricsFoundFooter(songKey, uri)
             }
             else -> LyricsGenerateBlock(songKey, uri, state)
@@ -93,6 +94,7 @@ fun LyricsGenerateBlock(songKey: String, uri: String?, state: LyricsState) {
     val scope = rememberCoroutineScope()
     val prefs by app.settings.lyricsPrefs.collectAsState(initial = LyricsPrefs())
     var askConsent by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf(false) }
     val provider = LyricsProviders[prefs.provider.coerceIn(0, LyricsProviders.lastIndex)]
 
     fun start() {
@@ -142,6 +144,11 @@ fun LyricsGenerateBlock(songKey: String, uri: String?, state: LyricsState) {
         }
     }
 
+    if (state !is LyricsState.Generating) {
+        TextButton(onClick = { editing = true }) { Text("Tulis atau impor lirik sendiri") }
+    }
+    if (editing) LyricsEditorDialog(songKey) { editing = false }
+
     if (askConsent) {
         AlertDialog(
             onDismissRequest = { askConsent = false },
@@ -164,23 +171,26 @@ fun LyricsGenerateBlock(songKey: String, uri: String?, state: LyricsState) {
     }
 }
 
-/** Catatan kualitas dan tombol buat ulang/hapus untuk lirik yang sudah jadi. */
+/** Tombol buat ulang, edit, dan hapus untuk lirik yang sudah ada. */
 @Composable
 fun LyricsFoundFooter(songKey: String, uri: String?) {
     val app = LocalContext.current.applicationContext as GprideApplication
     val prefs by app.settings.lyricsPrefs.collectAsState(initial = LyricsPrefs())
+    var editing by remember { mutableStateOf(false) }
     Text(
-        "Dibuat otomatis dari audio, bisa ada salah dengar.",
+        "Hasil otomatis bisa salah dengar. Ketuk Edit untuk memperbaiki.",
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Row {
+        TextButton(onClick = { editing = true }) { Text("Edit") }
         TextButton(
             onClick = { if (uri != null) app.lyrics.generate(songKey, uri, prefs) },
             enabled = uri != null && prefs.apiKey.isNotBlank(),
         ) { Text("Buat ulang") }
         TextButton(onClick = { app.lyrics.clear(songKey) }) { Text("Hapus") }
     }
+    if (editing) LyricsEditorDialog(songKey) { editing = false }
 }
 
 /** Penyedia, kunci API, dan bahasa lagu; dipakai di layar lirik dan di Pengaturan. */
@@ -250,7 +260,14 @@ private fun SyncedWindow(lines: List<LyricLine>, positionMs: Long, onSeek: (Long
 }
 
 @Composable
-fun LyricLineText(line: LyricLine, isActive: Boolean, onSeek: (Long) -> Unit) {
+private fun PlainWindow(lines: List<LyricLine>) {
+    Column(Modifier.fillMaxWidth().height(220.dp).verticalScroll(rememberScrollState())) {
+        lines.forEach { LyricLineText(it, isActive = false, onSeek = {}, plain = true) }
+    }
+}
+
+@Composable
+fun LyricLineText(line: LyricLine, isActive: Boolean, onSeek: (Long) -> Unit, plain: Boolean = false) {
     Text(
         line.text.ifBlank { "♪" },
         modifier = Modifier
@@ -258,10 +275,12 @@ fun LyricLineText(line: LyricLine, isActive: Boolean, onSeek: (Long) -> Unit) {
             .clickable { onSeek(line.timeMs) }
             .padding(vertical = 5.dp),
         textAlign = TextAlign.Center,
-        style = if (isActive) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
+        style = if (isActive) MaterialTheme.typography.titleMedium else if (plain) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
         fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
         color = if (isActive) {
             MaterialTheme.colorScheme.primary
+        } else if (plain) {
+            MaterialTheme.colorScheme.onSurface
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         },

@@ -67,7 +67,8 @@ fun LyricsScreen(player: PlayerViewModel, onBack: () -> Unit) {
         when (val s = lyricsState) {
             is LyricsState.Found -> {
                 val lines = s.lyrics.lines
-                val active = activeLineIndex(lines, state.positionMs + LYRICS_LEAD_MS)
+                val active = if (s.lyrics.synced) activeLineIndex(lines, state.positionMs + LYRICS_LEAD_MS) else -1
+                val onLineClick: (Long) -> Unit = { t -> if (s.lyrics.synced) player.seekTo(t) }
                 val listState = rememberLazyListState()
                 LaunchedEffect(active) {
                     if (active >= 0) listState.animateScrollToItem((active - 2).coerceAtLeast(0))
@@ -78,7 +79,7 @@ fun LyricsScreen(player: PlayerViewModel, onBack: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     itemsIndexed(lines) { index, line ->
-                        LyricLineText(line, index == active, player::seekTo)
+                        LyricLineText(line, index == active, onLineClick, plain = !s.lyrics.synced)
                     }
                 }
                 Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {

@@ -70,6 +70,19 @@ fun NowPlayingScreen(vm: PlayerViewModel, song: Song?, onBack: () -> Unit) {
 
     val color = MaterialTheme.colorScheme.primary
 
+    val context = LocalContext.current
+    val app = context.applicationContext as GprideApplication
+    val vizPrefs by app.settings.visualizer.collectAsState(initial = VisualizerPrefs())
+    var micGranted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED,
+        )
+    }
+    val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { micGranted = it }
+    val vizFeed = rememberVisualizerFeed(vizPrefs.enabled && micGranted && state.isPlaying, vizPrefs.sensitivity / 100f, vizPrefs.fps)
+    val vizColor = VisualizerPalettes[vizPrefs.colorIndex.coerceIn(0, VisualizerPalettes.lastIndex)]
+    val vizAccent = VisualizerAccents[vizPrefs.colorIndex.coerceIn(0, VisualizerAccents.lastIndex)]
+
     LazyColumn(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         item {
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -167,6 +180,39 @@ fun NowPlayingScreen(vm: PlayerViewModel, song: Song?, onBack: () -> Unit) {
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         },
+                    )
+                }
+            }
+        }
+        item {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .height(150.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                VisualizerCanvas(vizPrefs.style, vizFeed, vizColor, vizAccent, Modifier.fillMaxSize())
+                when {
+                    !vizPrefs.enabled -> Text(
+                        "Visualizer dimatikan",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    !micGranted -> Button(onClick = { micLauncher.launch(Manifest.permission.RECORD_AUDIO) }) {
+                        Text("Izinkan visualizer")
+                    }
+                    !state.isPlaying -> Text(
+                        "Putar lagu untuk melihat visualizer",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    vizFeed.failed.value -> Text(
+                        "Visualizer tidak tersedia di perangkat ini.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
