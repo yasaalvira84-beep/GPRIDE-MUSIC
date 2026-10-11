@@ -80,6 +80,10 @@ Semua fitur di bawah ini adalah bagian dari rencana aplikasi pribadi. Urutan imp
 - **Widget layar utama**: judul, artis, serta tombol sebelumnya, putar/jeda, dan berikutnya. Tombol bekerja selama layanan pemutar hidup (musik sedang diputar atau dijeda); ketuk badan widget untuk membuka aplikasi.
 - **Visualizer di layar Sedang Diputar**: memakai gaya, warna, sensitivitas, dan FPS dari Pengaturan visualizer.
 
+### Tema (Pengaturan > Tampilan)
+- **Warna aksen**: 8 pilihan (Hijau Neon bawaan, Cyan, Biru, Ungu, Pink, Oranye, Kuning, Merah). Tombol, sorotan lirik, bilah navigasi, dan kartu ikut berubah. Warna visualizer diatur terpisah di Pengaturan visualizer.
+- **Mode AMOLED**: latar hitam pekat dengan permukaan kartu yang lebih gelap.
+
 ## 6. Tampilan dan aksesibilitas
 - Desain gelap sebagai tema awal; opsi AMOLED dan tema terang dapat disediakan.
 - Warna aksen yang dapat dipilih.
