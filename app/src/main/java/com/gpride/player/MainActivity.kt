@@ -6,6 +6,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,7 +21,11 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
         )
         setContent {
-            GprideTheme {
+            val app = application as GprideApplication
+            // Baca sekali di awal agar tema tidak berkedip dari hijau ke warna pilihan saat aplikasi dibuka.
+            val initial = remember { runBlocking { app.settings.theme.first() } }
+            val theme by app.settings.theme.collectAsState(initial = initial)
+            GprideTheme(accentIndex = theme.accent, amoled = theme.amoled) {
                 GprideApp()
             }
         }

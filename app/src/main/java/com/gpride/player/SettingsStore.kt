@@ -19,8 +19,16 @@ data class VisualizerPrefs(
     val colorIndex: Int = 0,
 )
 
+data class ThemePrefs(
+    /** Indeks di [AccentOptions]. */
+    val accent: Int = 0,
+    val amoled: Boolean = false,
+)
+
 class SettingsStore(private val context: Context) {
     private val historyKey = booleanPreferencesKey("history_enabled")
+    private val themeAccentKey = intPreferencesKey("theme_accent")
+    private val themeAmoledKey = booleanPreferencesKey("theme_amoled")
     private val visEnabledKey = booleanPreferencesKey("vis_enabled")
     private val visStyleKey = intPreferencesKey("vis_style")
     private val visSensitivityKey = intPreferencesKey("vis_sensitivity")
@@ -82,6 +90,20 @@ class SettingsStore(private val context: Context) {
             it[eqBassKey] = prefs.bassBoost
             it[fadeSecKey] = prefs.fadeSec
             it[skipSilenceKey] = prefs.skipSilence
+        }
+    }
+
+    val theme: Flow<ThemePrefs> = context.dataStore.data.map { p ->
+        ThemePrefs(
+            accent = (p[themeAccentKey] ?: 0).coerceIn(0, AccentOptions.lastIndex),
+            amoled = p[themeAmoledKey] ?: false,
+        )
+    }
+
+    suspend fun setTheme(prefs: ThemePrefs) {
+        context.dataStore.edit {
+            it[themeAccentKey] = prefs.accent
+            it[themeAmoledKey] = prefs.amoled
         }
     }
 

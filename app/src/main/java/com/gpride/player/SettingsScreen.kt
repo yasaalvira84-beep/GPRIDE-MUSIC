@@ -46,6 +46,10 @@ fun SettingsScreen(library: LibraryViewModel, onOpenVisualizer: () -> Unit, onOp
     ) {
         Text("Pengaturan", style = MaterialTheme.typography.titleLarge)
 
+        SettingsCard("Tampilan") {
+            AppearanceSettings()
+        }
+
         SettingsCard("Visualizer") {
             Text(
                 "Gaya, sensitivitas, warna, dan FPS efek visual yang mengikuti musik.",
