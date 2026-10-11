@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Dipakai hanya untuk mencari lirik otomatis (judul/artis/durasi); file musik tidak diunggah. -->
+    <!-- Dipakai hanya saat pengguna menekan Buat lirik otomatis: audio lagu diunggah ke penyedia transkripsi (Groq/OpenAI). -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
