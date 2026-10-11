@@ -69,11 +69,16 @@ Semua fitur di bawah ini adalah bagian dari rencana aplikasi pribadi. Urutan imp
 - Pengaturan: penyedia, kunci API, dan bahasa lagu di Pengaturan > Lirik otomatis. Ada tombol Buat ulang dan Hapus.
 - Privasi: audio **diunggah** ke penyedia yang dipilih hanya saat pengguna menekan Buat lirik otomatis, setelah persetujuan. Batas layanan 25 MB per file; format yang didukung mp3, mp4, m4a, wav, webm (FLAC/Ogg mungkin ditolak).
 - Hasil bisa salah dengar, terutama pada musik ramai atau bahasa daerah; hasilnya bukan lirik resmi.
+- **Edit lirik**: tombol Edit membuka editor layar penuh untuk memperbaiki baris yang salah, menempel lirik sendiri, atau mengimpor file `.lrc`/`.txt`. Lirik tanpa penanda waktu tampil biasa tanpa sorotan. Bisa dipakai tanpa kunci API.
 
 ### Fitur audio (Tahap 6)
 - **Timer tidur**: 15/30/45/60/90 menit atau setelah lagu ini selesai; volume dipudarkan perlahan sebelum berhenti. Dijalankan di layanan pemutar sehingga tetap bekerja saat aplikasi ditutup.
 - **Equalizer**: preset (Flat, Bass Boost, Vokal, Treble, Rock, Pop, Elektronik, Akustik) atau kustom per band, plus bass boost. Bergantung dukungan perangkat.
 - **Pudar volume antarlagu** 0-8 detik (bukan crossfade tumpang-tindih) dan **lewati bagian hening**. Gapless ditangani ExoPlayer bila format file mendukung.
+
+### Widget dan visualizer di Sedang Diputar
+- **Widget layar utama**: judul, artis, serta tombol sebelumnya, putar/jeda, dan berikutnya. Tombol bekerja selama layanan pemutar hidup (musik sedang diputar atau dijeda); ketuk badan widget untuk membuka aplikasi.
+- **Visualizer di layar Sedang Diputar**: memakai gaya, warna, sensitivitas, dan FPS dari Pengaturan visualizer.
 
 ## 6. Tampilan dan aksesibilitas
 - Desain gelap sebagai tema awal; opsi AMOLED dan tema terang dapat disediakan.
